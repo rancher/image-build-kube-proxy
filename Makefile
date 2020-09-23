@@ -1,19 +1,41 @@
 SEVERITIES = HIGH,CRITICAL
 
-.PHONY: all
-all:
-	docker build --build-arg TAG=$(TAG) -t rancher/hardened-kube-proxy:$(TAG) .
+ifeq ($(ARCH),)
+ARCH=$(shell go env GOARCH)
+endif
+
+ORG ?= rancher
+PKG ?= github.com/kubernetes/kubernetes
+SRC ?= github.com/kubernetes/kubernetes
+TAG ?= v1.18.8
+
+ifneq ($(DRONE_TAG),)
+TAG := $(DRONE_TAG)
+endif
+
+.PHONY: image-build
+image-build:
+	docker build \
+		--build-arg ARCH=$(ARCH) \
+		--build-arg PKG=$(PKG) \
+		--build-arg SRC=$(SRC) \
+		--build-arg TAG=$(TAG) \
+		--tag $(ORG)/hardened-flannel:$(TAG) \
+		--tag $(ORG)/hardened-flannel:$(TAG)-$(ARCH) \
+	.
 
 .PHONY: image-push
 image-push:
-	docker push rancher/hardened-kube-proxy:$(TAG) >> /dev/null
-
-.PHONY: scan
-image-scan:
-	trivy --severity $(SEVERITIES) --no-progress --skip-update --ignore-unfixed rancher/hardened-kube-proxy:$(TAG)
+	docker push $(ORG)/hardened-flannel:$(TAG)-$(ARCH)
 
 .PHONY: image-manifest
 image-manifest:
-	docker image inspect rancher/hardened-kube-proxy:$(TAG)
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create rancher/hardened-kube-proxy:$(TAG) \
-		$(shell docker image inspect rancher/hardened-kube-proxy:$(TAG) | jq -r '.[] | .RepoDigests[0]')
+	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create --amend \
+		$(ORG)/hardened-flannel:$(TAG) \
+		$(ORG)/hardened-flannel:$(TAG)-$(ARCH)
+	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push \
+		$(ORG)/hardened-flannel:$(TAG)
+
+.PHONY: image-scan
+image-scan:
+	trivy --severity $(SEVERITIES) --no-progress --ignore-unfixed $(ORG)/hardened-flannel:$(TAG)
