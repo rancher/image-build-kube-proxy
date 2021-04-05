@@ -7,13 +7,15 @@ RUN set -x \
  && apk --no-cache add \
     file \
     gcc \
+    tar \
     git \
     make
 # setup the build
 ARG ARCH="amd64"
 ARG K3S_ROOT_VERSION="v0.8.1"
-ADD https://github.com/rancher/k3s-root/releases/download/${K3S_ROOT_VERSION}/k3s-root-xtables-${ARCH}.tar /opt/xtables/k3s-root-xtables.tar
-RUN tar xvf /opt/xtables/k3s-root-xtables.tar -C /opt/xtables
+ADD https://github.com/k3s-io/k3s-root/releases/download/${K3S_ROOT_VERSION}/k3s-root-${ARCH}.tar /opt/k3s-root/k3s-root.tar
+RUN tar xvf /opt/k3s-root/k3s-root.tar -C /opt/k3s-root --wildcards --strip-components=2 './bin/aux/*tables*'
+RUN tar xvf /opt/k3s-root/k3s-root.tar -C /opt/k3s-root './bin/ipset'
 ARG TAG="v1.18.8"
 ARG PKG="github.com/kubernetes/kubernetes"
 ARG SRC="github.com/kubernetes/kubernetes"
@@ -44,6 +46,7 @@ RUN microdnf update -y     && \
     microdnf install -y which \
     conntrack-tools        && \ 
     rm -rf /var/cache/yum
-COPY --from=builder /opt/xtables/bin/ /usr/sbin/
+COPY --from=builder /opt/k3s-root/aux/ /usr/sbin/
+COPY --from=builder /opt/k3s-root/bin/ /bin/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
