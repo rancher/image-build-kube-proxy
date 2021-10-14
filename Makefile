@@ -30,7 +30,9 @@ image-build:
 		--build-arg MINOR=$(shell ./scripts/semver-parse.sh ${TAG} minor) \
 		--tag $(ORG)/hardened-kube-proxy:$(TAG) \
 		--tag $(ORG)/hardened-kube-proxy:$(TAG)-$(ARCH) \
-	.
+		. \
+		-f Dockerfile.$(ARCH)
+
 
 .PHONY: image-push
 image-push:
