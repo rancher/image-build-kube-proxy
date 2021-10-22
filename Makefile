@@ -9,6 +9,11 @@ ORG ?= rancher
 PKG ?= github.com/kubernetes/kubernetes
 SRC ?= github.com/kubernetes/kubernetes
 TAG ?= v1.21.1$(BUILD_META)
+K3S_ROOT_VERSION ?= "v0.9.1"
+
+ifeq ($(ARCH),"s390x")
+K3S_ROOT_VERSION = v0.10.0-rc.0
+endif
 
 ifneq ($(DRONE_TAG),)
 TAG := $(DRONE_TAG)
@@ -28,10 +33,10 @@ image-build:
 		--build-arg TAG=$(TAG:$(BUILD_META)=) \
 		--build-arg MAJOR=$(shell ./scripts/semver-parse.sh ${TAG} major) \
 		--build-arg MINOR=$(shell ./scripts/semver-parse.sh ${TAG} minor) \
+		--build-arg K3S_ROOT_VERSION=$(K3S_ROOT_VERSION) \
 		--tag $(ORG)/hardened-kube-proxy:$(TAG) \
 		--tag $(ORG)/hardened-kube-proxy:$(TAG)-$(ARCH) \
-		. \
-		-f Dockerfile.$(ARCH)
+		.
 
 
 .PHONY: image-push
