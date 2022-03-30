@@ -12,7 +12,7 @@ RUN set -x \
     make
 # setup the build
 ARG ARCH="amd64"
-ARG K3S_ROOT_VERSION="v0.9.1"
+ARG K3S_ROOT_VERSION="v0.11.0"
 ADD https://github.com/k3s-io/k3s-root/releases/download/${K3S_ROOT_VERSION}/k3s-root-${ARCH}.tar /opt/k3s-root/k3s-root.tar
 RUN tar xvf /opt/k3s-root/k3s-root.tar -C /opt/k3s-root --wildcards --strip-components=2 './bin/aux/*tables*'
 RUN tar xvf /opt/k3s-root/k3s-root.tar -C /opt/k3s-root './bin/ipset'
