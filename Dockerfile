@@ -1,10 +1,10 @@
-ARG UBI_IMAGE=registry.access.redhat.com/ubi7/ubi-minimal:latest
+ARG BCI_IMAGE=registry.suse.com/bci/bci-base:latest
 ARG GO_IMAGE=rancher/hardened-build-base:v1.16.9b7
-FROM ${UBI_IMAGE} as ubi
+FROM ${BCI_IMAGE} as bci
 FROM ${GO_IMAGE} as builder
 # setup required packages
 RUN set -x \
- && apk --no-cache add \
+    && apk --no-cache add \
     file \
     gcc \
     tar \
@@ -37,18 +37,16 @@ RUN GO_LDFLAGS="-linkmode=external \
     " go-build-static.sh -mod=vendor -gcflags=-trimpath=${GOPATH}/src -o bin/kube-proxy ./cmd/kube-proxy
 RUN go-assert-static.sh bin/*
 RUN if [ "${ARCH}" != "s390x" ]; then \
-      go-assert-boring.sh bin/* ; \
+    go-assert-boring.sh bin/* ; \
     fi
 # install (with strip) to /usr/local/bin
 RUN install -s bin/* /usr/local/bin
 RUN kube-proxy --version
 
-FROM ubi
-RUN microdnf update -y     && \
-    microdnf install -y which \
-    conntrack-tools        && \ 
-    rm -rf /var/cache/yum
+FROM bci
+RUN zypper update -y && \
+    zypper install -y conntrack-tools which && \
+    zypper clean --all
 COPY --from=builder /opt/k3s-root/aux/ /usr/sbin/
 COPY --from=builder /opt/k3s-root/bin/ /bin/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
-
